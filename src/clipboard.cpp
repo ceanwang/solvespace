@@ -245,18 +245,32 @@ void GraphicsWindow::PasteClipboard(Vector trans, double theta, double scale) {
         c.reference = cc->reference;
         c.disp = cc->disp;
         c.comment = cc->comment;
-        bool removeConstraint = false;
+        bool dontAddConstraint = false;
         switch(c.type) {
             case Constraint::Type::COMMENT:
                 c.disp.offset = c.disp.offset.Plus(trans);
                 break;
-
             case Constraint::Type::PT_PT_DISTANCE:
             case Constraint::Type::PT_LINE_DISTANCE:
             case Constraint::Type::PROJ_PT_DISTANCE:
             case Constraint::Type::DIAMETER:
                 c.valA *= fabs(scale);
                 break;
+            case Constraint::Type::ARC_LINE_TANGENT: {
+                Constraint::ConstrainArcLineTangent(&c, SK.GetEntity(c.entityB),
+                                                    SK.GetEntity(c.entityA));
+                break;
+            }
+            case Constraint::Type::CUBIC_LINE_TANGENT: {
+                Constraint::ConstrainCubicLineTangent(&c, SK.GetEntity(c.entityB),
+                                                      SK.GetEntity(c.entityA));
+                break;
+            }
+            case Constraint::Type::CURVE_CURVE_TANGENT: {
+                Constraint::ConstrainCurveCurveTangent(&c, SK.GetEntity(c.entityA),
+                                                       SK.GetEntity(c.entityB));
+                break;
+            }
             case Constraint::Type::HORIZONTAL:
             case Constraint::Type::VERTICAL:
                 // When rotating 90 or 270 degrees, swap the vertical / horizontal constaints
@@ -267,13 +281,13 @@ void GraphicsWindow::PasteClipboard(Vector trans, double theta, double scale) {
                         c.type = Constraint::Type::HORIZONTAL;
                     }
                 } else if (fmod(theta, PI/2) != 0) {
-                    removeConstraint = true;
+                    dontAddConstraint = true;
                 }
                 break;
             default:
                 break;
         }
-        if (!removeConstraint) {
+        if (!dontAddConstraint) {
             hConstraint hc = Constraint::AddConstraint(&c, /*rememberForUndo=*/false);
             if(c.type == Constraint::Type::COMMENT) {
                 MakeSelected(hc);
