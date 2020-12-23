@@ -277,6 +277,63 @@ void SolveSpaceUI::SaveUsingTable(const Platform::Path &filename, int type) {
     }
 }
 
+void SolveSpaceUI::SaveUsingTableGeo(const Platform::Path &filename, int type) {
+    int i;
+    for(i = 0; SAVED[i].type != 0; i++) {
+        if(SAVED[i].type != type) continue;
+
+        int fmt = SAVED[i].fmt;
+        SAVEDptr *p = (SAVEDptr *)SAVED[i].ptr;
+        // Any items that aren't specified are assumed to be zero
+        if(fmt == 'S' && p->S().empty())          continue;
+        if(fmt == 'P' && p->P().IsEmpty())        continue;
+        if(fmt == 'd' && p->d() == 0)             continue;
+        if(fmt == 'f' && EXACT(p->f() == 0.0))    continue;
+        if(fmt == 'x' && p->x() == 0)             continue;
+        if(fmt == 'i')                            continue;
+
+        fprintf(fh, "%s=", SAVED[i].desc);
+        switch(fmt) {
+            case 'S': fprintf(fh, "%s",    p->S().c_str());       break;
+            case 'b': fprintf(fh, "%d",    p->b() ? 1 : 0);       break;
+            case 'c': fprintf(fh, "%08x",  p->c().ToPackedInt()); break;
+            case 'd': fprintf(fh, "%d",    p->d());               break;
+            case 'f': fprintf(fh, "%.20f", p->f());               break;
+            case 'x': fprintf(fh, "%08x",  p->x());               break;
+
+            case 'P': {
+                if(!p->P().IsEmpty()) {
+                    Platform::Path relativePath = p->P().RelativeTo(filename.Parent());
+                    ssassert(!relativePath.IsEmpty(), "Cannot relativize path");
+                    fprintf(fh, "%s", relativePath.ToPortable().c_str());
+                }
+                break;
+            }
+
+            case 'M': {
+                fprintf(fh, "{\n");
+                // Sort the mapping, since EntityMap is not deterministic.
+                std::vector<std::pair<EntityKey, EntityId>> sorted(p->M().begin(), p->M().end());
+                std::sort(sorted.begin(), sorted.end(),
+                    [](std::pair<EntityKey, EntityId> &a, std::pair<EntityKey, EntityId> &b) {
+                        return a.second.v < b.second.v;
+                    });
+                for(auto it : sorted) {
+                    fprintf(fh, "    %d %08x %d\n",
+                            it.second.v, it.first.input.v, it.first.copyNumber);
+                }
+                fprintf(fh, "}");
+                break;
+            }
+
+            case 'i': break;
+
+            default: ssassert(false, "Unexpected value format");
+        }
+        fprintf(fh, "\n");
+    }
+}
+
 bool SolveSpaceUI::SaveToFile(const Platform::Path &filename) {
     // Make sure all the entities are regenerated up to date, since they will be exported.
     SS.ScheduleShowTW();

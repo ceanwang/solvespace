@@ -1262,3 +1262,142 @@ void SolveSpaceUI::ExportAsPngTo(const Platform::Path &filename) {
     // The rest of the work is done in the next redraw.
     GW.Invalidate();
 }
+
+bool SolveSpaceUI::ExportAsGeoTo(const Platform::Path &filename) {
+    //screenshotFile = filename;
+    // The rest of the work is done in the next redraw.
+    //GW.Invalidate();
+    
+    
+    //
+    //copied from File.cpp - SolveSpaceUI::SaveToFile(const Platform::Path &filename)
+    //
+    // Make sure all the entities are regenerated up to date, since they will be exported.
+    SS.ScheduleShowTW();
+    SS.GenerateAll(SolveSpaceUI::Generate::ALL);
+
+    for(Group &g : SK.group) {
+        if(g.type != Group::Type::LINKED) continue;
+
+        if(g.linkFile.RelativeTo(filename).IsEmpty()) {
+            Error("This sketch links the sketch '%s'; it can only be saved "
+                  "on the same volume.", g.linkFile.raw.c_str());
+            return false;
+        }
+    }
+
+    fh = OpenFile(filename, "wb");
+    if(!fh) {
+        Error("Couldn't write to file '%s'", filename.raw.c_str());
+        return false;
+    }
+
+    fprintf(fh, "%s\n\n\n", VERSION_STRING);
+
+    int i, j;
+    /*
+    for(auto &g : SK.group) {
+        sv.g = g;
+        SaveUsingTable(filename, 'g');
+        fprintf(fh, "AddGroup\n\n");
+    }
+
+    for(auto &p : SK.param) {
+        sv.p = p;
+        SaveUsingTable(filename, 'p');
+        fprintf(fh, "AddParam\n\n");
+    }
+
+    for(auto &r : SK.request) {
+        sv.r = r;
+        SaveUsingTable(filename, 'r');
+        fprintf(fh, "AddRequest\n\n");
+    }
+    */
+    
+    for(auto &e : SK.entity) {
+        e.CalculateNumerical(/*forExport=*/true);
+        sv.e = e;
+        SaveUsingTableGeo(filename, 'e');
+        fprintf(fh, "AddEntity\n\n");
+    }
+
+    for(auto &c : SK.constraint) {
+        sv.c = c;
+        SaveUsingTableGeo(filename, 'c');
+        fprintf(fh, "AddConstraint\n\n");
+    }
+
+    /*
+    for(auto &s : SK.style) {
+        sv.s = s;
+        if(sv.s.h.v >= Style::FIRST_CUSTOM) {
+            SaveUsingTable(filename, 's');
+            fprintf(fh, "AddStyle\n\n");
+        }
+    }
+    */
+    
+    // A group will have either a mesh or a shell, but not both; but the code
+    // to print either of those just does nothing if the mesh/shell is empty.
+
+    /*
+    Group *g = SK.GetGroup(*SK.groupOrder.Last());
+    SMesh *m = &g->runningMesh;
+    for(i = 0; i < m->l.n; i++) {
+        STriangle *tr = &(m->l[i]);
+        fprintf(fh, "Triangle %08x %08x "
+                "%.20f %.20f %.20f  %.20f %.20f %.20f  %.20f %.20f %.20f\n",
+            tr->meta.face, tr->meta.color.ToPackedInt(),
+            CO(tr->a), CO(tr->b), CO(tr->c));
+    }
+
+    SShell *s = &g->runningShell;
+    SSurface *srf;
+    for(srf = s->surface.First(); srf; srf = s->surface.NextAfter(srf)) {
+        fprintf(fh, "Surface %08x %08x %08x %d %d\n",
+            srf->h.v, srf->color.ToPackedInt(), srf->face, srf->degm, srf->degn);
+        for(i = 0; i <= srf->degm; i++) {
+            for(j = 0; j <= srf->degn; j++) {
+                fprintf(fh, "SCtrl %d %d %.20f %.20f %.20f Weight %20.20f\n",
+                    i, j, CO(srf->ctrl[i][j]), srf->weight[i][j]);
+            }
+        }
+
+        STrimBy *stb;
+        for(stb = srf->trim.First(); stb; stb = srf->trim.NextAfter(stb)) {
+            fprintf(fh, "TrimBy %08x %d %.20f %.20f %.20f  %.20f %.20f %.20f\n",
+                stb->curve.v, stb->backwards ? 1 : 0,
+                CO(stb->start), CO(stb->finish));
+        }
+
+        fprintf(fh, "AddSurface\n");
+    }
+    SCurve *sc;
+    for(sc = s->curve.First(); sc; sc = s->curve.NextAfter(sc)) {
+        fprintf(fh, "Curve %08x %d %d %08x %08x\n",
+            sc->h.v,
+            sc->isExact ? 1 : 0, sc->exact.deg,
+            sc->surfA.v, sc->surfB.v);
+
+        if(sc->isExact) {
+            for(i = 0; i <= sc->exact.deg; i++) {
+                fprintf(fh, "CCtrl %d %.20f %.20f %.20f Weight %.20f\n",
+                    i, CO(sc->exact.ctrl[i]), sc->exact.weight[i]);
+            }
+        }
+        SCurvePt *scpt;
+        for(scpt = sc->pts.First(); scpt; scpt = sc->pts.NextAfter(scpt)) {
+            fprintf(fh, "CurvePt %d %.20f %.20f %.20f\n",
+                scpt->vertex ? 1 : 0, CO(scpt->p));
+        }
+
+        fprintf(fh, "AddCurve\n");
+    }
+    */
+    
+    fclose(fh);
+
+    return true;
+    
+}

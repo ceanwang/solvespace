@@ -650,6 +650,7 @@ public:
     } SaveTable;
     static const SaveTable SAVED[];
     void SaveUsingTable(const Platform::Path &filename, int type);
+    void SaveUsingTableGeo(const Platform::Path &filename, int type);
     void LoadUsingTable(const Platform::Path &filename, char *key, char *val);
     struct {
         Group        g;
@@ -684,6 +685,7 @@ public:
     bool ReloadAllLinked(const Platform::Path &filename, bool canCancel = false);
     // And the various export options
     void ExportAsPngTo(const Platform::Path &filename);
+    bool ExportAsGeoTo(const Platform::Path &filename);
     void ExportMeshTo(const Platform::Path &filename);
     void ExportMeshAsStlTo(FILE *f, SMesh *sm);
     void ExportMeshAsObjTo(FILE *fObj, FILE *fMtl, SMesh *sm);
