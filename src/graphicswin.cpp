@@ -64,6 +64,8 @@ const MenuEntry Menu[] = {
 { 1,  NULL,                             Command::NONE,             0,       KN, NULL   },
 { 1, N_("Snap Selection to &Grid"),     Command::SNAP_TO_GRID,     '.',     KN, mEdit  },
 { 1, N_("Rotate Imported &90°"),        Command::ROTATE_90,        '9',     KN, mEdit  },
+{ 1, N_("Mirror about &x"),             Command::MIRROR_X,         'x',     KN, mEdit  },
+{ 1, N_("Mirror about &y"),             Command::MIRROR_Y,         'y',     KN, mEdit  },
 { 1,  NULL,                             Command::NONE,             0,       KN, NULL   },
 { 1, N_("Cu&t"),                        Command::CUT,              C|'x',   KN, mClip  },
 { 1, N_("&Copy"),                       Command::COPY,             C|'c',   KN, mClip  },
@@ -1106,6 +1108,74 @@ void GraphicsWindow::MenuEdit(Command id) {
         }
 
         case Command::ROTATE_90: {
+            SS.GW.GroupSelection();
+            Entity *e = NULL;
+            if(SS.GW.gs.n == 1 && SS.GW.gs.points == 1) {
+                e = SK.GetEntity(SS.GW.gs.point[0]);
+            } else if(SS.GW.gs.n == 1 && SS.GW.gs.entities == 1) {
+                e = SK.GetEntity(SS.GW.gs.entity[0]);
+            }
+            SS.GW.ClearSelection();
+
+            hGroup hg = e ? e->group : SS.GW.activeGroup;
+            Group *g = SK.GetGroup(hg);
+            if(g->type != Group::Type::LINKED) {
+                Error(_("To use this command, select a point or other "
+                        "entity from an linked part, or make a link "
+                        "group the active group."));
+                break;
+            }
+
+            SS.UndoRemember();
+            // Rotate by ninety degrees about the coordinate axis closest
+            // to the screen normal.
+            Vector norm = SS.GW.projRight.Cross(SS.GW.projUp);
+            norm = norm.ClosestOrtho();
+            norm = norm.WithMagnitude(1);
+            Quaternion qaa = Quaternion::From(norm, PI/2);
+
+            g->TransformImportedBy(Vector::From(0, 0, 0), qaa);
+
+            // and regenerate as necessary.
+            SS.MarkGroupDirty(hg);
+            break;
+        }
+
+        case Command::MIRROR_X: {
+            SS.GW.GroupSelection();
+            Entity *e = NULL;
+            if(SS.GW.gs.n == 1 && SS.GW.gs.points == 1) {
+                e = SK.GetEntity(SS.GW.gs.point[0]);
+            } else if(SS.GW.gs.n == 1 && SS.GW.gs.entities == 1) {
+                e = SK.GetEntity(SS.GW.gs.entity[0]);
+            }
+            SS.GW.ClearSelection();
+
+            hGroup hg = e ? e->group : SS.GW.activeGroup;
+            Group *g = SK.GetGroup(hg);
+            if(g->type != Group::Type::LINKED) {
+                Error(_("To use this command, select a point or other "
+                        "entity from an linked part, or make a link "
+                        "group the active group."));
+                break;
+            }
+
+            SS.UndoRemember();
+            // Rotate by ninety degrees about the coordinate axis closest
+            // to the screen normal.
+            Vector norm = SS.GW.projRight.Cross(SS.GW.projUp);
+            norm = norm.ClosestOrtho();
+            norm = norm.WithMagnitude(1);
+            Quaternion qaa = Quaternion::From(norm, PI/2);
+
+            g->TransformImportedBy(Vector::From(0, 0, 0), qaa);
+
+            // and regenerate as necessary.
+            SS.MarkGroupDirty(hg);
+            break;
+        }
+
+        case Command::MIRROR_Y: {
             SS.GW.GroupSelection();
             Entity *e = NULL;
             if(SS.GW.gs.n == 1 && SS.GW.gs.points == 1) {

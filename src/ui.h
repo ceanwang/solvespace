@@ -103,6 +103,8 @@ enum class Command : uint32_t {
     SELECT_ALL,
     SNAP_TO_GRID,
     ROTATE_90,
+    MIRROR_X,
+    MIRROR_Y,
     UNSELECT_ALL,
     REGEN_ALL,
     EDIT_LINE_STYLES,
