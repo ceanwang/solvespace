@@ -1,3 +1,16 @@
+Fork Readme
+
+FEA with Solvespace
+
+Add FEA constraints:
+1. Velocity
+2. Pressure
+3. Temperature
+4. Force
+
+
+Original Readme
+
 <img src="https://avatars1.githubusercontent.com/u/18541596?s=70&v=4" width="70" height="70" alt="SolveSpace Logo" align="left">
 
 SolveSpace
